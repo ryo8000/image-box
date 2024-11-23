@@ -12,6 +12,86 @@ provider "aws" {
   region = var.aws_region
 }
 
+# API Gateway
+resource "aws_api_gateway_rest_api" "image_box_api" {
+  name           = "${var.service_name}-api"
+  description    = "Image box API"
+  api_key_source = "HEADER"
+  endpoint_configuration {
+    types = [
+      "EDGE"
+    ]
+  }
+}
+
+resource "aws_api_gateway_resource" "create_upload_url" {
+  path_part   = "createUploadUrl"
+  parent_id   = aws_api_gateway_rest_api.image_box_api.root_resource_id
+  rest_api_id = aws_api_gateway_rest_api.image_box_api.id
+}
+
+resource "aws_api_gateway_method" "create_upload_url_post_method" {
+  rest_api_id      = aws_api_gateway_rest_api.image_box_api.id
+  resource_id      = aws_api_gateway_resource.create_upload_url.id
+  http_method      = "POST"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_method" "create_upload_url_options_method" {
+  rest_api_id      = aws_api_gateway_rest_api.image_box_api.id
+  resource_id      = aws_api_gateway_resource.create_upload_url.id
+  http_method      = "OPTIONS"
+  authorization    = "NONE"
+  api_key_required = false
+}
+
+resource "aws_api_gateway_integration" "image_box_api_create_upload_url_post_integration" {
+  rest_api_id             = aws_api_gateway_rest_api.image_box_api.id
+  resource_id             = aws_api_gateway_resource.create_upload_url.id
+  http_method             = aws_api_gateway_method.create_upload_url_post_method.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.lambda_create_upload_url.invoke_arn
+}
+
+resource "aws_api_gateway_integration" "image_box_api_create_upload_url_options_integration" {
+  rest_api_id = aws_api_gateway_rest_api.image_box_api.id
+  resource_id = aws_api_gateway_resource.create_upload_url.id
+  http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
+  type        = "MOCK"
+}
+
+resource "aws_api_gateway_method_response" "response_200" {
+  rest_api_id = aws_api_gateway_rest_api.image_box_api.id
+  resource_id = aws_api_gateway_resource.create_upload_url.id
+  http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
+  status_code = "200"
+}
+
+resource "aws_api_gateway_integration_response" "MyDemoIntegrationResponse" {
+  rest_api_id = aws_api_gateway_rest_api.image_box_api.id
+  resource_id = aws_api_gateway_resource.create_upload_url.id
+  http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
+  status_code = aws_api_gateway_method_response.response_200.status_code
+  # TODO
+  # response_parameters = {
+  #   "method.response.header.Access-Control-Allow-Headers" = "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token"
+  #   "method.response.header.Access-Control-Allow-Methods" = "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+  #   "method.response.header.Access-Control-Allow-Origin"  = "*"
+  # }
+}
+
+resource "aws_api_gateway_deployment" "image_box_api_deployment" {
+  rest_api_id = aws_api_gateway_rest_api.image_box_api.id
+}
+
+resource "aws_api_gateway_stage" "image_box_api_stage" {
+  rest_api_id   = aws_api_gateway_rest_api.image_box_api.id
+  deployment_id = aws_api_gateway_deployment.image_box_api_deployment.id
+  stage_name    = "v1"
+}
+
 # IAM
 data "aws_iam_policy_document" "assume_role_policy" {
   statement {
@@ -86,4 +166,11 @@ resource "aws_lambda_function" "lambda_create_upload_url" {
   tags = {
     Service = var.service_name
   }
+}
+
+resource "aws_lambda_permission" "lambda_create_upload_url_permission" {
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.lambda_create_upload_url.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.image_box_api.execution_arn}/*/${aws_api_gateway_method.create_upload_url_post_method.http_method}${aws_api_gateway_resource.create_upload_url.path}"
 }
