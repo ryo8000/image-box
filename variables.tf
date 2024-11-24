@@ -4,33 +4,33 @@ variable "service_name" {
   type        = string
 }
 
-variable "aws_account_id" {
-  default     = ""
-  description = "AWS account id"
-  type        = string
-}
-
-variable "aws_s3_bucket" {
+variable "app_s3_bucket" {
   default     = ""
   description = "AWS S3 bucket"
   type        = string
 }
 
-variable "aws_region" {
+variable "app_region" {
   default     = ""
   description = "AWS region to deploy products."
   type        = string
 }
 
-variable "aws_presigned_url_expires" {
+variable "app_presigned_url_expires" {
   default     = 60
   description = "1 minute"
   type        = number
 }
 
-variable "aws_origin" {
+variable "app_origin" {
   default     = ""
   description = "Access-Control-Allow-Origin"
+  type        = string
+}
+
+variable "app_image_metadata_table" {
+  default     = "image-metadata-table"
+  description = "table name"
   type        = string
 }
 

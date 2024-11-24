@@ -10,21 +10,28 @@ logger = getLogger(__name__)
 def lambda_handler(event: dict, context) -> dict:
     logger.debug("get event.", extra={"event": event})
 
-    bucket_name = os.environ["AWS_S3_BUCKET_NAME"]
-    expires = int(os.environ["AWS_PRESIGNED_URL_EXPIRES"])
-    origin = os.environ["AWS_ORIGIN"]
+    origin = os.environ["APP_ORIGIN"]
+    bucket_name = os.environ["APP_S3_BUCKET_NAME"]
+    region = os.environ["APP_REGION"]
+    expires = int(os.environ["APP_PRESIGNED_URL_EXPIRES"])
     s3_client = boto3.client("s3")
 
-    return main(event, bucket_name, expires, origin, s3_client)
+    return main(event, origin, bucket_name, region, expires, s3_client)
 
 
-def main(event: dict, bucket_name: str, expires: int, origin: str, s3_client) -> dict:
+def main(
+        event: dict,
+        origin: str,
+        bucket_name: str,
+        region: str,
+        expires: int,
+        s3_client) -> dict:
     try:
-        body = json.loads(event['body'])
+        body = json.loads(event["body"])
         file_name = body["fileName"]
         file_type = body["fileType"]
         # user_id = event["requestContext"]["authorizer"]["claims"]["sub"]
-        user_id = "test-user"  # TODO : Cognito user ID
+        user_id = "test-user"  # TODO: Cognito user ID
         params = {
             "Bucket": bucket_name,
             "Key": f"{user_id}/{file_name}",
@@ -39,12 +46,14 @@ def main(event: dict, bucket_name: str, expires: int, origin: str, s3_client) ->
         logger.debug("created presigned url.", extra={"uploadUrl": upload_url})
 
         return {
-            "statusCode": 200,
+            "statusCode": 201,
             "headers": {
                 "Access-Control-Allow-Origin": origin
             },
             "body": json.dumps({
-                "uploadUrl": upload_url
+                "uploadUrl": upload_url,
+                "imageUrl": get_object_url(bucket_name,
+                                           f"{user_id}/{file_name}", region)
             }),
         }
     except Exception:
@@ -55,8 +64,16 @@ def main(event: dict, bucket_name: str, expires: int, origin: str, s3_client) ->
                 "Access-Control-Allow-Origin": origin
             },
             "body": json.dumps({
-                "error": {
-                    "message": "Error generating URL"
-                }
+                "message": "Error generating URL"
             }),
         }
+
+
+def get_object_url(bucket_name, key, region) -> str:
+    """Get the object url.
+
+    Returns:
+        the object url
+    """
+    bucket_region = f"{region}." if region != "us-east-1" else ""
+    return f"https://{bucket_name}.s3.{bucket_region}amazonaws.com/{key}"
