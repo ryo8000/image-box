@@ -15,7 +15,7 @@ provider "aws" {
 # API Gateway
 resource "aws_api_gateway_rest_api" "image_box_api" {
   name           = "${var.service_name}-api"
-  description    = "Image box API"
+  description    = "Image Box API"
   api_key_source = "HEADER"
   endpoint_configuration {
     types = [
@@ -46,7 +46,7 @@ resource "aws_api_gateway_method" "create_upload_url_options_method" {
   api_key_required = false
 }
 
-resource "aws_api_gateway_integration" "image_box_api_create_upload_url_post_integration" {
+resource "aws_api_gateway_integration" "create_upload_url_post_integration" {
   rest_api_id             = aws_api_gateway_rest_api.image_box_api.id
   resource_id             = aws_api_gateway_resource.create_upload_url.id
   http_method             = aws_api_gateway_method.create_upload_url_post_method.http_method
@@ -55,34 +55,39 @@ resource "aws_api_gateway_integration" "image_box_api_create_upload_url_post_int
   uri                     = aws_lambda_function.lambda_create_upload_url.invoke_arn
 }
 
-resource "aws_api_gateway_integration" "image_box_api_create_upload_url_options_integration" {
+resource "aws_api_gateway_integration" "create_upload_url_options_integration" {
   rest_api_id = aws_api_gateway_rest_api.image_box_api.id
   resource_id = aws_api_gateway_resource.create_upload_url.id
   http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
   type        = "MOCK"
 }
 
-resource "aws_api_gateway_method_response" "response_200" {
+resource "aws_api_gateway_method_response" "create_upload_url_options_response_200" {
   rest_api_id = aws_api_gateway_rest_api.image_box_api.id
   resource_id = aws_api_gateway_resource.create_upload_url.id
   http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
   status_code = "200"
 }
 
-resource "aws_api_gateway_integration_response" "MyDemoIntegrationResponse" {
+resource "aws_api_gateway_integration_response" "create_upload_url_options_integration_response" {
   rest_api_id = aws_api_gateway_rest_api.image_box_api.id
   resource_id = aws_api_gateway_resource.create_upload_url.id
   http_method = aws_api_gateway_method.create_upload_url_options_method.http_method
-  status_code = aws_api_gateway_method_response.response_200.status_code
+  status_code = aws_api_gateway_method_response.create_upload_url_options_response_200.status_code
   # TODO
   # response_parameters = {
-  #   "method.response.header.Access-Control-Allow-Headers" = "Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token"
-  #   "method.response.header.Access-Control-Allow-Methods" = "DELETE,GET,HEAD,OPTIONS,PATCH,POST,PUT"
+  #   "method.response.header.Access-Control-Allow-Headers" = "Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token"
+  #   "method.response.header.Access-Control-Allow-Methods" = "OPTIONS,POST"
   #   "method.response.header.Access-Control-Allow-Origin"  = "*"
   # }
 }
 
 resource "aws_api_gateway_deployment" "image_box_api_deployment" {
+  depends_on = [
+    "aws_api_gateway_integration.create_upload_url_post_integration",
+    "aws_api_gateway_integration.create_upload_url_options_integration",
+  ]
+
   rest_api_id = aws_api_gateway_rest_api.image_box_api.id
 }
 
@@ -151,6 +156,7 @@ resource "aws_lambda_function" "lambda_create_upload_url" {
     variables = {
       AWS_S3_BUCKET_NAME        = var.aws_s3_bucket
       AWS_PRESIGNED_URL_EXPIRES = var.aws_presigned_url_expires
+      AWS_ORIGIN                = var.aws_origin
     }
   }
   handler = "create_upload_url.lambda_handler"
