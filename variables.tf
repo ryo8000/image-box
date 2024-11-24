@@ -28,6 +28,12 @@ variable "aws_presigned_url_expires" {
   type        = number
 }
 
+variable "aws_origin" {
+  default     = ""
+  description = "Access-Control-Allow-Origin"
+  type        = string
+}
+
 variable "lambda_application_log_level" {
   default     = "INFO"
   description = "lambda application log level"
