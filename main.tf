@@ -9,7 +9,7 @@ terraform {
 }
 
 provider "aws" {
-  region = var.aws_region
+  region = var.app_region
 }
 
 # API Gateway
@@ -292,9 +292,10 @@ resource "aws_lambda_function" "lambda_create_upload_url" {
   description      = "create upload url."
   environment {
     variables = {
-      AWS_ORIGIN                = var.aws_origin
-      AWS_S3_BUCKET_NAME        = var.aws_s3_bucket
-      AWS_PRESIGNED_URL_EXPIRES = var.aws_presigned_url_expires
+      APP_ORIGIN                = var.app_origin
+      APP_S3_BUCKET_NAME        = var.app_s3_bucket
+      APP_REGION                = var.app_region
+      APP_PRESIGNED_URL_EXPIRES = var.app_presigned_url_expires
     }
   }
   handler = "create_upload_url.lambda_handler"
@@ -326,8 +327,8 @@ resource "aws_lambda_function" "lambda_fetch_image_metadata" {
   description      = "fetch image metadata."
   environment {
     variables = {
-      AWS_ORIGIN               = var.aws_origin
-      AWS_IMAGE_METADATA_TABLE = var.aws_image_metadata_table
+      APP_ORIGIN               = var.app_origin
+      APP_IMAGE_METADATA_TABLE = var.app_image_metadata_table
     }
   }
   handler = "fetch_image_metadata.lambda_handler"
@@ -359,8 +360,8 @@ resource "aws_lambda_function" "lambda_save_image_metadata" {
   description      = "save image metadata."
   environment {
     variables = {
-      AWS_ORIGIN               = var.aws_origin
-      AWS_IMAGE_METADATA_TABLE = var.aws_image_metadata_table
+      APP_ORIGIN               = var.app_origin
+      APP_IMAGE_METADATA_TABLE = var.app_image_metadata_table
     }
   }
   handler = "save_image_metadata.lambda_handler"

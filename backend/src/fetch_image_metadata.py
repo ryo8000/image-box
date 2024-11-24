@@ -11,9 +11,9 @@ logger = getLogger(__name__)
 def lambda_handler(event: dict, context) -> dict:
     logger.debug("get event.", extra={"event": event})
 
-    origin = os.environ["AWS_ORIGIN"]
+    origin = os.environ["APP_ORIGIN"]
     dynamodb = boto3.resource("dynamodb")
-    table_name = os.environ["AWS_IMAGE_METADATA_TABLE"]
+    table_name = os.environ["APP_IMAGE_METADATA_TABLE"]
     table = dynamodb.Table(table_name)
 
     return main(event, origin, table)

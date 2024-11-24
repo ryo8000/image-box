@@ -10,18 +10,20 @@ logger = getLogger(__name__)
 def lambda_handler(event: dict, context) -> dict:
     logger.debug("get event.", extra={"event": event})
 
-    origin = os.environ["AWS_ORIGIN"]
-    bucket_name = os.environ["AWS_S3_BUCKET_NAME"]
-    expires = int(os.environ["AWS_PRESIGNED_URL_EXPIRES"])
+    origin = os.environ["APP_ORIGIN"]
+    bucket_name = os.environ["APP_S3_BUCKET_NAME"]
+    region = os.environ["APP_REGION"]
+    expires = int(os.environ["APP_PRESIGNED_URL_EXPIRES"])
     s3_client = boto3.client("s3")
 
-    return main(event, origin, bucket_name, expires, s3_client)
+    return main(event, origin, bucket_name, region, expires, s3_client)
 
 
 def main(
         event: dict,
         origin: str,
         bucket_name: str,
+        region: str,
         expires: int,
         s3_client) -> dict:
     try:
@@ -49,7 +51,9 @@ def main(
                 "Access-Control-Allow-Origin": origin
             },
             "body": json.dumps({
-                "uploadUrl": upload_url
+                "uploadUrl": upload_url,
+                "imageUrl": get_object_url(bucket_name,
+                                           f"{user_id}/{file_name}", region)
             }),
         }
     except Exception:
@@ -63,3 +67,13 @@ def main(
                 "message": "Error generating URL"
             }),
         }
+
+
+def get_object_url(bucket_name, key, region) -> str:
+    """Get the object url.
+
+    Returns:
+        the object url
+    """
+    bucket_region = f"{region}." if region != "us-east-1" else ""
+    return f"https://{bucket_name}.s3.{bucket_region}amazonaws.com/{key}"
