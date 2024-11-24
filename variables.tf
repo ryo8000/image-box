@@ -34,6 +34,12 @@ variable "aws_origin" {
   type        = string
 }
 
+variable "aws_image_metadata_table" {
+  default     = "image-metadata-table"
+  description = "table name"
+  type        = string
+}
+
 variable "lambda_application_log_level" {
   default     = "INFO"
   description = "lambda application log level"
